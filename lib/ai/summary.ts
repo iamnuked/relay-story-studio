@@ -1,84 +1,41 @@
 import { connectToDatabase } from "@/lib/db/mongoose";
 import { serializeSummary } from "@/lib/utils/serializers";
-import { badRequest, notFound } from "@/lib/server/errors";
+import { ApiError, badRequest, notFound } from "@/lib/server/errors";
 import { toObjectId } from "@/lib/utils/object-id";
 import type { SummaryResponse, SummaryRequest } from "@/lib/ai/types";
 import { CanvasModel, NodeModel, SummaryModel } from "@/models";
 
 const MIN_CONTEXT_NODES = 3;
 const MIN_CONTEXT_CHARACTERS = 1200;
+const SUMMARY_QUERY_TIMEOUT_MS = 5000;
+const OPENAI_RESPONSES_API_URL = "https://api.openai.com/v1/responses";
+const DEFAULT_OPENAI_SUMMARY_MODEL = "gpt-5-mini";
+const DEFAULT_OPENAI_SUMMARY_MAX_OUTPUT_TOKENS = 220;
+const OPENAI_SUMMARY_TIMEOUT_MS = 45000;
 
-function splitSentences(content: string) {
-  const cleaned = content.replace(/\s+/g, " ").trim();
-
-  if (!cleaned) {
-    return [];
-  }
-
-  return cleaned
-    .split(/(?<=[.!?])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-}
-
-function normalizeSentence(sentence: string) {
-  return sentence.replace(/[\s.?!]+/g, " ").trim().toLowerCase();
-}
-
-function ensureSentenceEnding(sentence: string) {
-  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
-}
-
-function buildMockSummary(sourceContents: string[]) {
-  const sourceSentences = sourceContents.flatMap(splitSentences);
-  const picked: string[] = [];
-  const seen = new Set<string>();
-
-  const candidateIndexes = [0, Math.floor(sourceSentences.length / 2), sourceSentences.length - 1];
-
-  for (const index of candidateIndexes) {
-    const sentence = sourceSentences[index];
-
-    if (!sentence) {
-      continue;
-    }
-
-    const normalized = normalizeSentence(sentence);
-
-    if (!normalized || seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    picked.push(ensureSentenceEnding(sentence));
-  }
-
-  if (picked.length < 2) {
-    for (const sentence of sourceSentences) {
-      const normalized = normalizeSentence(sentence);
-
-      if (!normalized || seen.has(normalized)) {
-        continue;
-      }
-
-      seen.add(normalized);
-      picked.push(ensureSentenceEnding(sentence));
-
-      if (picked.length >= 3) {
-        break;
-      }
-    }
-  }
-
-  const summary = picked.slice(0, 4).join(" ").trim();
-
-  if (summary) {
-    return summary;
-  }
-
-  const fallback = sourceContents.find((content) => content.trim())?.trim() ?? "";
-  return ensureSentenceEnding(fallback.slice(0, 220));
-}
+type OpenAiResponsesPayload = {
+  output_text?: string;
+  output?: Array<{
+    type?: string;
+    content?: Array<
+      | {
+          type?: string;
+          text?: string;
+        }
+      | {
+          type?: string;
+          refusal?: string;
+        }
+    >;
+  }>;
+  status?: string;
+  incomplete_details?: {
+    reason?: string;
+  };
+  error?: {
+    message?: string;
+  };
+};
 
 function estimateTokenCount(text: string) {
   return Math.max(1, Math.ceil(text.length / 4));
@@ -92,6 +49,133 @@ function sameIdOrder(left: string[], right: string[]) {
   return left.every((value, index) => value === right[index]);
 }
 
+function buildInlineSummarySnapshot(input: {
+  canvasId: string;
+  baseNodeId: string;
+  summaryText: string;
+  sourceNodeIds: string[];
+}) {
+  return {
+    id: `inline-${input.baseNodeId}`,
+    canvasId: input.canvasId,
+    baseNodeId: input.baseNodeId,
+    summaryText: input.summaryText,
+    sourceNodeIds: input.sourceNodeIds,
+    estimatedTokenCount: estimateTokenCount(input.summaryText),
+    createdAt: new Date().toISOString()
+  };
+}
+
+function getOpenAiApiKey() {
+  return process.env.OPENAI_API_KEY?.trim() ?? "";
+}
+
+function getOpenAiSummaryConfig() {
+  const apiKey = getOpenAiApiKey();
+
+  if (!apiKey) {
+    throw new ApiError(500, "OPENAI_API_KEY is not configured.");
+  }
+
+  const rawMaxOutputTokens =
+    process.env.OPENAI_SUMMARY_MAX_OUTPUT_TOKENS?.trim() ?? `${DEFAULT_OPENAI_SUMMARY_MAX_OUTPUT_TOKENS}`;
+  const maxOutputTokens = Number.parseInt(rawMaxOutputTokens, 10);
+
+  if (!Number.isFinite(maxOutputTokens) || maxOutputTokens <= 0) {
+    throw new ApiError(500, "OPENAI_SUMMARY_MAX_OUTPUT_TOKENS must be a positive integer.");
+  }
+
+  return {
+    apiKey,
+    model: process.env.OPENAI_SUMMARY_MODEL?.trim() || DEFAULT_OPENAI_SUMMARY_MODEL,
+    maxOutputTokens
+  };
+}
+
+function buildSummaryContext(nodes: Array<{ title?: string | null; content: string }>) {
+  return nodes
+    .map((node, index) => {
+      const cleanedContent = node.content.replace(/\s+/g, " ").trim();
+      const title = node.title?.trim();
+      const header = title ? `Story node ${index + 1}: ${title}` : `Story node ${index + 1}`;
+
+      return `${header}\n${cleanedContent}`;
+    })
+    .join("\n\n");
+}
+
+function extractOutputText(payload: OpenAiResponsesPayload) {
+  const direct = payload.output_text?.trim();
+
+  if (direct) {
+    return direct;
+  }
+
+  const fragments =
+    payload.output?.flatMap((item) =>
+      item.type === "message"
+        ? (item.content ?? []).flatMap((contentItem) => {
+            if ("text" in contentItem && contentItem.type === "output_text" && contentItem.text?.trim()) {
+              return [contentItem.text.trim()];
+            }
+
+            return [];
+          })
+        : []
+    ) ?? [];
+
+  return fragments.join("\n").trim();
+}
+
+async function readOpenAiError(response: Response) {
+  try {
+    const payload = (await response.json()) as OpenAiResponsesPayload;
+    return payload.error?.message ?? "OpenAI summary generation failed.";
+  } catch {
+    return "OpenAI summary generation failed.";
+  }
+}
+
+async function generateOpenAiSummary(nodes: Array<{ title?: string | null; content: string }>) {
+  const config = getOpenAiSummaryConfig();
+  const branchContext = buildSummaryContext(nodes);
+
+  const response = await fetch(OPENAI_RESPONSES_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      instructions:
+        "You summarize earlier branch context for a relay novel writer. Write a concise summary in plain prose, keep spoilers only to what is already in the provided text, preserve major character actions, tone shifts, and unresolved threads, and stay within 2 to 4 sentences.",
+      input: branchContext,
+      max_output_tokens: config.maxOutputTokens
+    }),
+    signal: AbortSignal.timeout(OPENAI_SUMMARY_TIMEOUT_MS)
+  });
+
+  if (!response.ok) {
+    throw new ApiError(502, await readOpenAiError(response));
+  }
+
+  const payload = (await response.json()) as OpenAiResponsesPayload;
+  const summaryText = extractOutputText(payload);
+
+  if (summaryText) {
+    return summaryText;
+  }
+
+  const incompleteReason = payload.incomplete_details?.reason;
+
+  if (payload.status === "incomplete" && incompleteReason) {
+    throw new ApiError(502, `OpenAI summary generation was incomplete: ${incompleteReason}.`);
+  }
+
+  throw new ApiError(502, "OpenAI summary response did not include text.");
+}
+
 export async function getSummaryForBranch(input: SummaryRequest): Promise<SummaryResponse> {
   await connectToDatabase();
 
@@ -99,8 +183,8 @@ export async function getSummaryForBranch(input: SummaryRequest): Promise<Summar
   const baseNodeId = toObjectId(input.baseNodeId, "baseNodeId");
 
   const [canvas, baseNode] = await Promise.all([
-    CanvasModel.findById(canvasId),
-    NodeModel.findById(baseNodeId)
+    CanvasModel.findById(canvasId).maxTimeMS(SUMMARY_QUERY_TIMEOUT_MS),
+    NodeModel.findById(baseNodeId).maxTimeMS(SUMMARY_QUERY_TIMEOUT_MS)
   ]);
 
   if (!canvas) {
@@ -116,7 +200,7 @@ export async function getSummaryForBranch(input: SummaryRequest): Promise<Summar
     ? await NodeModel.find({
         _id: { $in: baseNode.ancestorIds },
         canvasId
-      })
+      }).maxTimeMS(SUMMARY_QUERY_TIMEOUT_MS)
     : [];
 
   const sourceNodeMap = new Map(sourceNodes.map((node) => [node._id.toString(), node]));
@@ -147,47 +231,66 @@ export async function getSummaryForBranch(input: SummaryRequest): Promise<Summar
     };
   }
 
-  const existingSummary = await SummaryModel.findOne({ canvasId, baseNodeId }).sort({ updatedAt: -1 });
+  try {
+    const existingSummary = await SummaryModel.findOne({ canvasId, baseNodeId })
+      .sort({ updatedAt: -1 })
+      .maxTimeMS(SUMMARY_QUERY_TIMEOUT_MS);
 
-  if (existingSummary) {
-    const existingSourceNodeIds = existingSummary.sourceNodeIds.map((nodeId) => nodeId.toString());
+    if (existingSummary) {
+      const existingSourceNodeIds = existingSummary.sourceNodeIds.map((nodeId) => nodeId.toString());
 
-    if (sameIdOrder(existingSourceNodeIds, orderedSourceNodeIds)) {
+      if (sameIdOrder(existingSourceNodeIds, orderedSourceNodeIds)) {
+        return {
+          status: "ready",
+          source: "cache",
+          summary: serializeSummary(existingSummary),
+          meta
+        };
+      }
+    }
+  } catch (error) {
+    console.warn("Summary cache lookup failed, continuing with live generation.", error);
+  }
+
+  const summaryText = await generateOpenAiSummary(orderedSourceNodes);
+  try {
+    const savedSummary = await SummaryModel.findOneAndUpdate(
+      { canvasId, baseNodeId },
+      {
+        $set: {
+          summaryText,
+          sourceNodeIds: orderedSourceNodes.map((node) => node._id),
+          estimatedTokenCount: estimateTokenCount(summaryText)
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+      }
+    ).maxTimeMS(SUMMARY_QUERY_TIMEOUT_MS);
+
+    if (savedSummary) {
       return {
         status: "ready",
-        source: "cache",
-        summary: serializeSummary(existingSummary),
+        source: "openai",
+        summary: serializeSummary(savedSummary),
         meta
       };
     }
-  }
-
-  const summaryText = buildMockSummary(sourceContents);
-  const savedSummary = await SummaryModel.findOneAndUpdate(
-    { canvasId, baseNodeId },
-    {
-      $set: {
-        summaryText,
-        sourceNodeIds: orderedSourceNodes.map((node) => node._id),
-        estimatedTokenCount: estimateTokenCount(summaryText)
-      }
-    },
-    {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true
-    }
-  );
-
-  if (!savedSummary) {
-    throw new Error("Could not persist summary.");
+  } catch (error) {
+    console.warn("Summary persistence failed, returning uncached live summary.", error);
   }
 
   return {
     status: "ready",
-    source: "mock",
-    summary: serializeSummary(savedSummary),
+    source: "openai",
+    summary: buildInlineSummarySnapshot({
+      canvasId: canvasId.toString(),
+      baseNodeId: baseNodeId.toString(),
+      summaryText,
+      sourceNodeIds: orderedSourceNodeIds
+    }),
     meta
   };
 }
-

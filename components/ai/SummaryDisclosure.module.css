@@ -29,6 +29,11 @@
   margin: 0;
 }
 
+.errorBlock {
+  display: grid;
+  gap: 10px;
+}
+
 .summaryText,
 .message,
 .error {
@@ -43,4 +48,14 @@
 
 .error {
   color: #9d2b21;
+}
+
+.retryButton {
+  justify-self: start;
+  border: 1px solid rgba(157, 43, 33, 0.18);
+  background: rgba(255, 239, 236, 0.92);
+  color: #9d2b21;
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
 }

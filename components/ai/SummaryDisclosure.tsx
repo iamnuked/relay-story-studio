@@ -47,6 +47,8 @@ export function SummaryDisclosure({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 9000);
 
     async function loadSummary() {
       setState({ status: "loading" });
@@ -57,7 +59,9 @@ export function SummaryDisclosure({
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ canvasId, baseNodeId })
+          body: JSON.stringify({ canvasId, baseNodeId }),
+          cache: "no-store",
+          signal: controller.signal
         });
 
         if (!response.ok) {
@@ -80,9 +84,16 @@ export function SummaryDisclosure({
         if (!cancelled) {
           setState({
             status: "error",
-            message: error instanceof Error ? error.message : "Could not load summary."
+            message:
+              error instanceof DOMException && error.name === "AbortError"
+                ? "Summary request timed out. Try again."
+                : error instanceof Error
+                  ? error.message
+                  : "Could not load summary."
           });
         }
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
 
@@ -90,19 +101,47 @@ export function SummaryDisclosure({
 
     return () => {
       cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeout);
     };
   }, [open, state.status, canvasId, baseNodeId]);
 
+  function handleToggle() {
+    setOpen((current) => {
+      const nextOpen = !current;
+
+      if (!nextOpen) {
+        setState({ status: "idle" });
+      } else if (state.status === "error") {
+        setState({ status: "idle" });
+      }
+
+      return nextOpen;
+    });
+  }
+
+  function handleRetry() {
+    setState({ status: "idle" });
+    setOpen(true);
+  }
+
   return (
     <div className={[styles.root, className ?? ""].join(" ").trim()}>
-      <button className={styles.trigger} onClick={() => setOpen((current) => !current)} type="button">
+      <button className={styles.trigger} onClick={handleToggle} type="button">
         {open ? "Hide previous summary" : triggerLabel}
       </button>
 
       {open ? (
         <div className={styles.panel}>
           {state.status === "loading" ? <p className={styles.message}>Loading branch summary...</p> : null}
-          {state.status === "error" ? <p className={styles.error}>{state.message}</p> : null}
+          {state.status === "error" ? (
+            <div className={styles.errorBlock}>
+              <p className={styles.error}>{state.message}</p>
+              <button className={styles.retryButton} onClick={handleRetry} type="button">
+                Retry summary
+              </button>
+            </div>
+          ) : null}
           {state.status === "not_needed" ? (
             <p className={styles.message}>
               This branch is still short enough that the earlier context fits without a generated summary.
