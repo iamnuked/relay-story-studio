@@ -1,0 +1,167 @@
+<svg width="2200" height="1500" viewBox="0 0 2200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" stroke="#E6E7EB" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#111827" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="2200" height="1500" fill="#F4F5F7"/>
+  <rect width="2200" height="1500" fill="url(#grid)"/>
+
+  <text x="60" y="52" fill="#111827" font-size="28" font-family="Helvetica, Arial, sans-serif" font-weight="700">Relay Novel Platform Wireframes</text>
+  <text x="60" y="82" fill="#4B5563" font-size="14" font-family="Helvetica, Arial, sans-serif">Low-fidelity board for Figma import. Desktop-first, grayscale with one accent color.</text>
+
+  <rect x="60" y="120" width="620" height="420" rx="24" fill="#FFFFFF" stroke="#D0D5DD" filter="url(#shadow)"/>
+  <text x="88" y="158" fill="#111827" font-size="22" font-family="Helvetica, Arial, sans-serif" font-weight="700">01. Home + Create Canvas</text>
+  <rect x="88" y="184" width="564" height="56" rx="14" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="108" y="218" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif">Logo</text>
+  <text x="178" y="218" fill="#475467" font-size="14" font-family="Helvetica, Arial, sans-serif">My Canvases</text>
+  <rect x="468" y="196" width="164" height="32" rx="16" fill="#111827"/>
+  <text x="494" y="217" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">New Canvas</text>
+
+  <rect x="88" y="264" width="250" height="112" rx="18" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="108" y="294" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Canvas Card</text>
+  <text x="108" y="324" fill="#667085" font-size="13" font-family="Helvetica, Arial, sans-serif">Title / Last visited / Open</text>
+  <rect x="358" y="264" width="250" height="112" rx="18" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="378" y="294" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Canvas Card</text>
+  <text x="378" y="324" fill="#667085" font-size="13" font-family="Helvetica, Arial, sans-serif">Title / Last visited / Open</text>
+
+  <rect x="170" y="282" width="360" height="220" rx="20" fill="#FFFFFF" stroke="#101828" stroke-width="2" filter="url(#shadow)"/>
+  <text x="194" y="316" fill="#111827" font-size="18" font-family="Helvetica, Arial, sans-serif" font-weight="700">Create Canvas</text>
+  <text x="194" y="348" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Title</text>
+  <rect x="194" y="356" width="312" height="32" rx="10" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="194" y="406" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Max nodes per branch</text>
+  <rect x="194" y="414" width="140" height="32" rx="10" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="352" y="406" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">First node</text>
+  <rect x="352" y="414" width="154" height="56" rx="10" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <rect x="194" y="462" width="120" height="24" rx="12" fill="#E7F0FF"/>
+  <text x="214" y="478" fill="#175CD3" font-size="12" font-family="Helvetica, Arial, sans-serif">Upload image</text>
+  <rect x="386" y="462" width="120" height="24" rx="12" fill="#E7F0FF"/>
+  <text x="413" y="478" fill="#175CD3" font-size="12" font-family="Helvetica, Arial, sans-serif">AI image</text>
+
+  <rect x="740" y="120" width="1400" height="760" rx="24" fill="#FFFFFF" stroke="#D0D5DD" filter="url(#shadow)"/>
+  <text x="768" y="158" fill="#111827" font-size="22" font-family="Helvetica, Arial, sans-serif" font-weight="700">02. Shared Canvas</text>
+  <rect x="768" y="184" width="1344" height="56" rx="14" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="792" y="218" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Canvas Title</text>
+  <rect x="1568" y="196" width="108" height="32" rx="16" fill="#E7F0FF"/>
+  <text x="1597" y="217" fill="#175CD3" font-size="13" font-family="Helvetica, Arial, sans-serif">Copy link</text>
+  <rect x="1688" y="196" width="96" height="32" rx="16" fill="#111827"/>
+  <text x="1712" y="217" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Read path</text>
+  <rect x="1796" y="196" width="288" height="32" rx="16" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="1818" y="217" fill="#475467" font-size="13" font-family="Helvetica, Arial, sans-serif">Read-only visitor / Login to write</text>
+  <rect x="768" y="270" width="1344" height="582" rx="18" fill="#F9FAFB" stroke="#D0D5DD"/>
+  <path d="M1018 430C1090 430 1090 430 1162 430" stroke="#98A2B3" stroke-width="3"/>
+  <path d="M1292 430C1372 430 1372 370 1456 370" stroke="#98A2B3" stroke-width="3"/>
+  <path d="M1292 430C1372 430 1372 510 1456 510" stroke="#98A2B3" stroke-width="3"/>
+  <path d="M1586 370C1670 370 1670 370 1758 370" stroke="#98A2B3" stroke-width="3"/>
+  <path d="M1586 510C1670 510 1670 604 1758 604" stroke="#98A2B3" stroke-width="3"/>
+  <rect x="894" y="388" width="124" height="84" rx="16" fill="#FFFFFF" stroke="#344054" stroke-width="2"/>
+  <text x="927" y="421" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Root Node</text>
+  <text x="914" y="444" fill="#667085" font-size="11" font-family="Helvetica, Arial, sans-serif">First story block</text>
+  <rect x="1162" y="388" width="130" height="84" rx="16" fill="#FFFFFF" stroke="#344054" stroke-width="2"/>
+  <text x="1197" y="421" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Node</text>
+  <text x="1184" y="444" fill="#667085" font-size="11" font-family="Helvetica, Arial, sans-serif">Continue story</text>
+  <rect x="1456" y="328" width="130" height="84" rx="16" fill="#FFFFFF" stroke="#344054" stroke-width="2"/>
+  <text x="1491" y="361" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Branch A</text>
+  <text x="1478" y="384" fill="#667085" font-size="11" font-family="Helvetica, Arial, sans-serif">User ending path</text>
+  <rect x="1456" y="468" width="130" height="84" rx="16" fill="#FFFFFF" stroke="#344054" stroke-width="2"/>
+  <text x="1491" y="501" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Branch B</text>
+  <text x="1477" y="524" fill="#667085" font-size="11" font-family="Helvetica, Arial, sans-serif">Open branch</text>
+  <rect x="1758" y="328" width="140" height="84" rx="16" fill="#ECFDF3" stroke="#12B76A" stroke-width="2"/>
+  <text x="1784" y="361" fill="#067647" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Ending Node</text>
+  <text x="1776" y="384" fill="#067647" font-size="11" font-family="Helvetica, Arial, sans-serif">Reads like a full story</text>
+  <rect x="1758" y="562" width="160" height="84" rx="16" fill="#ECFDF3" stroke="#12B76A" stroke-width="2"/>
+  <text x="1778" y="595" fill="#067647" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Auto Ending Node</text>
+  <text x="1776" y="618" fill="#067647" font-size="11" font-family="Helvetica, Arial, sans-serif">Same reading flow as ending</text>
+  <rect x="804" y="654" width="238" height="154" rx="18" fill="#FFFFFF" fill-opacity="0.72" stroke="#CBD5E1"/>
+  <text x="826" y="686" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Mini Map</text>
+  <rect x="826" y="704" width="194" height="80" rx="12" fill="#EEF2F6" stroke="#D0D5DD"/>
+  <rect x="850" y="720" width="54" height="18" rx="8" fill="#FFFFFF" stroke="#98A2B3"/>
+  <rect x="926" y="742" width="54" height="18" rx="8" fill="#FFFFFF" stroke="#98A2B3"/>
+  <rect x="886" y="768" width="54" height="18" rx="8" fill="#FFFFFF" stroke="#98A2B3"/>
+  <rect x="842" y="748" width="64" height="24" rx="8" fill="none" stroke="#175CD3" stroke-width="2"/>
+  <text x="826" y="802" fill="#667085" font-size="12" font-family="Helvetica, Arial, sans-serif">Overlayed at bottom-left of canvas</text>
+
+  <rect x="60" y="580" width="700" height="760" rx="24" fill="#FFFFFF" stroke="#D0D5DD" filter="url(#shadow)"/>
+  <text x="88" y="618" fill="#111827" font-size="22" font-family="Helvetica, Arial, sans-serif" font-weight="700">03. Node Detail + Write Panel</text>
+  <rect x="88" y="648" width="644" height="96" rx="16" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="112" y="680" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Selected Node</text>
+  <text x="112" y="704" fill="#667085" font-size="13" font-family="Helvetica, Arial, sans-serif">Author / Time / Ending badge / Image preview</text>
+  <rect x="544" y="668" width="160" height="34" rx="17" fill="#111827"/>
+  <text x="570" y="690" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Write next node</text>
+
+  <rect x="88" y="766" width="644" height="540" rx="18" fill="#FFFFFF" stroke="#101828" stroke-width="2"/>
+  <text x="112" y="802" fill="#111827" font-size="18" font-family="Helvetica, Arial, sans-serif" font-weight="700">Write Next Node</text>
+  <text x="112" y="832" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Parent node preview</text>
+  <rect x="112" y="844" width="596" height="70" rx="12" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <rect x="112" y="932" width="180" height="28" rx="14" fill="#EFF8FF" stroke="#B2DDFF"/>
+  <text x="132" y="950" fill="#175CD3" font-size="12" font-family="Helvetica, Arial, sans-serif">Show previous summary</text>
+  <rect x="112" y="978" width="596" height="88" rx="12" fill="#F9FAFB" stroke="#D0D5DD" stroke-dasharray="6 6"/>
+  <text x="130" y="1012" fill="#98A2B3" font-size="13" font-family="Helvetica, Arial, sans-serif">Collapsed by default. Expands only when user wants summary.</text>
+  <text x="112" y="1098" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Story content</text>
+  <rect x="112" y="1110" width="596" height="100" rx="12" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <rect x="112" y="1228" width="120" height="28" rx="14" fill="#E7F0FF"/>
+  <text x="132" y="1246" fill="#175CD3" font-size="12" font-family="Helvetica, Arial, sans-serif">Upload image</text>
+  <rect x="248" y="1228" width="120" height="28" rx="14" fill="#E7F0FF"/>
+  <text x="278" y="1246" fill="#175CD3" font-size="12" font-family="Helvetica, Arial, sans-serif">AI image</text>
+  <rect x="530" y="1226" width="22" height="22" rx="6" fill="#FFFFFF" stroke="#98A2B3"/>
+  <text x="560" y="1243" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Mark as ending</text>
+  <text x="112" y="1288" fill="#667085" font-size="12" font-family="Helvetica, Arial, sans-serif">Draft saved automatically</text>
+  <rect x="522" y="1268" width="186" height="34" rx="17" fill="#111827"/>
+  <text x="554" y="1290" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Confirm and publish</text>
+
+  <rect x="820" y="930" width="500" height="380" rx="24" fill="#FFFFFF" stroke="#D0D5DD" filter="url(#shadow)"/>
+  <text x="848" y="968" fill="#111827" font-size="22" font-family="Helvetica, Arial, sans-serif" font-weight="700">04. Login / Sign Up</text>
+  <rect x="848" y="994" width="200" height="36" rx="18" fill="#111827"/>
+  <text x="916" y="1017" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Login</text>
+  <rect x="1060" y="994" width="200" height="36" rx="18" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="1112" y="1017" fill="#475467" font-size="13" font-family="Helvetica, Arial, sans-serif">Sign Up</text>
+  <text x="848" y="1064" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Email</text>
+  <rect x="848" y="1072" width="444" height="38" rx="12" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="848" y="1136" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Password</text>
+  <rect x="848" y="1144" width="444" height="38" rx="12" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="848" y="1208" fill="#475467" font-size="12" font-family="Helvetica, Arial, sans-serif">Nickname (sign up only)</text>
+  <rect x="848" y="1216" width="444" height="38" rx="12" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <rect x="1132" y="1268" width="160" height="34" rx="17" fill="#111827"/>
+  <text x="1190" y="1290" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Continue</text>
+
+  <rect x="1360" y="930" width="780" height="480" rx="24" fill="#FFFFFF" stroke="#D0D5DD" filter="url(#shadow)"/>
+  <text x="1388" y="968" fill="#111827" font-size="22" font-family="Helvetica, Arial, sans-serif" font-weight="700">05. Branch Reader</text>
+  <rect x="1388" y="994" width="724" height="52" rx="14" fill="#F8FAFC" stroke="#D0D5DD"/>
+  <text x="1412" y="1026" fill="#111827" font-size="16" font-family="Helvetica, Arial, sans-serif" font-weight="700">Novel Title</text>
+  <rect x="1908" y="1004" width="92" height="32" rx="16" fill="#E7F0FF"/>
+  <text x="1933" y="1025" fill="#175CD3" font-size="13" font-family="Helvetica, Arial, sans-serif">Share</text>
+  <rect x="2012" y="1004" width="82" height="32" rx="16" fill="#111827"/>
+  <text x="2035" y="1025" fill="#FFFFFF" font-size="13" font-family="Helvetica, Arial, sans-serif">Back</text>
+
+  <rect x="1498" y="1072" width="504" height="292" rx="20" fill="#FFFCF5" stroke="#E4E7EC"/>
+  <text x="1540" y="1114" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">The corridor had already forgotten the footsteps</text>
+  <text x="1540" y="1142" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">that made it important. Dust rested on the window frame,</text>
+  <text x="1540" y="1170" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">and the moonlight stretched over the floorboards like a</text>
+  <text x="1540" y="1198" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">sheet someone had forgotten to fold. Yerin pressed her</text>
+  <text x="1540" y="1226" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">hand against the door and felt the grain of old wood,</text>
+  <text x="1540" y="1254" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">thinking not about who had left, but who might still be</text>
+  <text x="1540" y="1282" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">waiting on the other side. When the latch gave way, the</text>
+  <text x="1540" y="1310" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">silence opened before her like the first sentence of a</text>
+  <text x="1540" y="1338" fill="#344054" font-size="14" font-family="Georgia, Times New Roman, serif">story that had been looking for a reader.</text>
+  <rect x="1410" y="1102" width="54" height="110" rx="12" fill="#F2F4F7" stroke="#D0D5DD"/>
+  <rect x="1410" y="1230" width="54" height="110" rx="12" fill="#F2F4F7" stroke="#D0D5DD"/>
+  <text x="1398" y="1386" fill="#667085" font-size="12" font-family="Helvetica, Arial, sans-serif">Node metadata is removed. Only stitched body text and images remain.</text>
+
+  <rect x="1984" y="274" width="128" height="66" rx="16" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="2008" y="304" fill="#111827" font-size="12" font-family="Helvetica, Arial, sans-serif" font-weight="700">Node style</text>
+  <text x="2004" y="324" fill="#667085" font-size="11" font-family="Helvetica, Arial, sans-serif">Fixed card size</text>
+
+  <rect x="1930" y="588" width="182" height="74" rx="18" fill="#FFF7ED" stroke="#FDB022"/>
+  <text x="1952" y="618" fill="#B54708" font-size="13" font-family="Helvetica, Arial, sans-serif" font-weight="700">Interaction Notes</text>
+  <text x="1952" y="640" fill="#B54708" font-size="11" font-family="Helvetica, Arial, sans-serif">- View by link</text>
+  <text x="1952" y="656" fill="#B54708" font-size="11" font-family="Helvetica, Arial, sans-serif">- Login to write</text>
+
+  <rect x="80" y="1380" width="2040" height="72" rx="18" fill="#FFFFFF" stroke="#D0D5DD"/>
+  <text x="108" y="1412" fill="#111827" font-size="14" font-family="Helvetica, Arial, sans-serif" font-weight="700">Implementation notes</text>
+  <text x="270" y="1412" fill="#475467" font-size="13" font-family="Helvetica, Arial, sans-serif">React Flow canvas, draggable node positions, MongoDB tree data, Auth.js login, summary hidden by default, branch auto-ending rendered like normal ending.</text>
+  <text x="108" y="1434" fill="#475467" font-size="13" font-family="Helvetica, Arial, sans-serif">This SVG can be imported into Figma as a base board and split into frames if you want a cleaner product-design pass.</text>
+</svg>

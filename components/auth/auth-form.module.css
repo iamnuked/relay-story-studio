@@ -1,0 +1,22 @@
+.panel {
+  padding: 28px;
+  display: grid;
+  gap: 18px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.helper {
+  margin: 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

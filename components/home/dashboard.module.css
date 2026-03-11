@@ -1,0 +1,54 @@
+.header {
+  padding: clamp(24px, 5vw, 40px);
+  display: grid;
+  gap: 16px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+.stack {
+  display: grid;
+  gap: 24px;
+}
+
+.section {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.canvasCard {
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.meta {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.canvasTitle {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: 360px minmax(0, 1fr);
+    align-items: start;
+  }
+}
