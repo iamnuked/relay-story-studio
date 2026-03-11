@@ -16,6 +16,9 @@ const MINIMAP_PADDING_X = 14;
 const MINIMAP_PADDING_Y = 14;
 const MIN_CHILD_X_GAP = 36;
 const VERTICAL_DRAG_FACTOR = 0.58;
+const MIN_ZOOM = 0.65;
+const MAX_ZOOM = 1.6;
+const ZOOM_STEP = 0.1;
 const WORLD_PADDING_LEFT = 960;
 const WORLD_PADDING_RIGHT = 1560;
 const WORLD_PADDING_TOP = 620;
@@ -52,6 +55,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   const [assets, setAssets] = useState(detail.assets);
   const [selectedNodeId, setSelectedNodeId] = useState(detail.nodes[0]?.id ?? "");
   const [writeOpen, setWriteOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftText, setDraftText] = useState("");
   const [endingChecked, setEndingChecked] = useState(false);
@@ -109,24 +113,28 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   const forbiddenBoundaryX = activeParentNode
     ? activeParentNode.position.x + worldOffsetX + NODE_WIDTH + MIN_CHILD_X_GAP
     : null;
+  const viewportWorldWidth = viewport.width / zoom;
+  const viewportWorldHeight = viewport.height / zoom;
+  const viewportWorldLeft = viewport.scrollLeft / zoom;
+  const viewportWorldTop = viewport.scrollTop / zoom;
 
   const miniViewportWidth = clamp(
-    (viewport.width / canvasWidth) * MINIMAP_WIDTH,
+    (viewportWorldWidth / canvasWidth) * MINIMAP_WIDTH,
     34,
     MINIMAP_WIDTH,
   );
   const miniViewportHeight = clamp(
-    (viewport.height / canvasHeight) * MINIMAP_HEIGHT,
+    (viewportWorldHeight / canvasHeight) * MINIMAP_HEIGHT,
     28,
     MINIMAP_HEIGHT,
   );
   const miniViewportLeft = clamp(
-    (viewport.scrollLeft / canvasWidth) * MINIMAP_WIDTH,
+    (viewportWorldLeft / canvasWidth) * MINIMAP_WIDTH,
     0,
     MINIMAP_WIDTH - miniViewportWidth,
   );
   const miniViewportTop = clamp(
-    (viewport.scrollTop / canvasHeight) * MINIMAP_HEIGHT,
+    (viewportWorldTop / canvasHeight) * MINIMAP_HEIGHT,
     0,
     MINIMAP_HEIGHT - miniViewportHeight,
   );
@@ -174,11 +182,11 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     const rootRenderY = rootNode.position.y + worldOffsetY;
 
     surface.scrollTo({
-      left: Math.max(0, rootRenderX - surface.clientWidth * 0.34),
-      top: Math.max(0, rootRenderY - surface.clientHeight * 0.22),
+      left: Math.max(0, rootRenderX * zoom - surface.clientWidth * 0.34),
+      top: Math.max(0, rootRenderY * zoom - surface.clientHeight * 0.22),
     });
     initializedViewportRef.current = true;
-  }, [rootNode, worldOffsetX, worldOffsetY]);
+  }, [rootNode, worldOffsetX, worldOffsetY, zoom]);
 
   useEffect(() => {
     if (!dragState) {
@@ -196,7 +204,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     const minAllowedY = 80 - worldOffsetY;
 
     function handlePointerMove(event: PointerEvent) {
-      const pointer = getCanvasPointerPosition(event, canvasInnerRef.current);
+      const pointer = getCanvasPointerPosition(event, canvasInnerRef.current, zoom);
 
       if (!pointer) {
         return;
@@ -251,7 +259,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [dragState, viewerMode, worldOffsetX, worldOffsetY]);
+  }, [dragState, viewerMode, worldOffsetX, worldOffsetY, zoom]);
 
   useEffect(() => {
     if (!panState) {
@@ -301,6 +309,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         miniMapFrameRef.current,
         canvasWidth,
         canvasHeight,
+        zoom,
       );
     }
 
@@ -315,7 +324,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [miniMapDragging, canvasWidth, canvasHeight]);
+  }, [miniMapDragging, canvasWidth, canvasHeight, zoom]);
 
   useEffect(() => {
     if (!copied) {
@@ -332,7 +341,6 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         return;
       }
 
-      setWriteOpen(false);
       setControlsOpen(false);
     }
 
@@ -415,6 +423,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
       miniMapFrameRef.current,
       canvasWidth,
       canvasHeight,
+      zoom,
     );
     setMiniMapDragging(true);
   }
@@ -424,7 +433,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
       return;
     }
 
-    const pointer = getCanvasPointerPosition(event.nativeEvent, canvasInnerRef.current);
+    const pointer = getCanvasPointerPosition(event.nativeEvent, canvasInnerRef.current, zoom);
 
     if (!pointer) {
       return;
@@ -527,6 +536,31 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     }
   }
 
+  function handleZoom(nextZoom: number) {
+    const clampedZoom = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
+    const surface = canvasSurfaceRef.current;
+
+    if (!surface || clampedZoom === zoom) {
+      setZoom(clampedZoom);
+      return;
+    }
+
+    const centerWorldX = (surface.scrollLeft + surface.clientWidth / 2) / zoom;
+    const centerWorldY = (surface.scrollTop + surface.clientHeight / 2) / zoom;
+
+    setZoom(clampedZoom);
+
+    window.requestAnimationFrame(() => {
+      const nextLeft = centerWorldX * clampedZoom - surface.clientWidth / 2;
+      const nextTop = centerWorldY * clampedZoom - surface.clientHeight / 2;
+
+      surface.scrollTo({
+        left: clamp(nextLeft, 0, Math.max(0, canvasWidth * clampedZoom - surface.clientWidth)),
+        top: clamp(nextTop, 0, Math.max(0, canvasHeight * clampedZoom - surface.clientHeight)),
+      });
+    });
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.workspace}>
@@ -536,10 +570,19 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
           onPointerDown={handleCanvasPointerDown}
         >
           <div
-            className={styles.canvasInner}
-            ref={canvasInnerRef}
-            style={{ width: canvasWidth, height: canvasHeight }}
+            className={styles.canvasScaler}
+            style={{ width: canvasWidth * zoom, height: canvasHeight * zoom }}
           >
+            <div
+              className={styles.canvasInner}
+              ref={canvasInnerRef}
+              style={{
+                width: canvasWidth,
+                height: canvasHeight,
+                transform: `scale(${zoom})`,
+                transformOrigin: "top left",
+              }}
+            >
             {forbiddenBoundaryX ? (
               <div className={styles.constraintZone} style={{ width: forbiddenBoundaryX }}>
                 <div className={styles.constraintLabel}>
@@ -596,6 +639,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                 </button>
               );
             })}
+            </div>
           </div>
         </div>
 
@@ -646,8 +690,29 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
 
         <section className={styles.miniMap} data-no-pan="true">
           <div className={styles.miniMapChrome}>
-            <h2 className={styles.miniMapTitle}>Navigator</h2>
-            <p className={styles.miniCaption}>Click or drag inside this map to move the camera.</p>
+            <div>
+              <h2 className={styles.miniMapTitle}>Navigator</h2>
+              <p className={styles.miniCaption}>Click or drag inside this map to move the camera.</p>
+            </div>
+            <div className={styles.miniMapZoom}>
+              <button
+                className={styles.zoomButton}
+                disabled={zoom <= MIN_ZOOM}
+                onClick={() => handleZoom(zoom - ZOOM_STEP)}
+                type="button"
+              >
+                -
+              </button>
+              <span className={styles.zoomValue}>{Math.round(zoom * 100)}%</span>
+              <button
+                className={styles.zoomButton}
+                disabled={zoom >= MAX_ZOOM}
+                onClick={() => handleZoom(zoom + ZOOM_STEP)}
+                type="button"
+              >
+                +
+              </button>
+            </div>
           </div>
           <div
             className={styles.miniMapFrame}
@@ -725,28 +790,13 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         </div>
 
         {writeOpen && viewerMode === "authenticated" ? (
-          <div
-            className={styles.composerOverlay}
-            data-no-pan="true"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setWriteOpen(false);
-              }
-            }}
-          >
+          <div className={styles.composerOverlay} data-no-pan="true">
             <section className={styles.composerPanel}>
               <div className={styles.composerHeader}>
                 <div>
                   <span className={styles.sectionLabel}>Write next node</span>
                   <h2 className={styles.composerTitle}>Continue from {getNodeHeading(selectedNode)}</h2>
                 </div>
-                <button
-                  className={styles.controlToggle}
-                  onClick={() => setWriteOpen(false)}
-                  type="button"
-                >
-                  Close
-                </button>
               </div>
 
               <div className={styles.composerGrid}>
@@ -812,7 +862,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                   {submitMessage ?? "Draft locally here, then publish once the branch feels right."}
                 </span>
                 <div className={styles.buttonRow}>
-                  <button className={styles.secondaryButton} onClick={() => setWriteOpen(false)} type="button">
+                  <button className={styles.secondaryButton} onClick={resetWritePanelState} type="button">
                     Cancel
                   </button>
                   <button
@@ -833,7 +883,11 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   );
 }
 
-function getCanvasPointerPosition(event: PointerEvent, canvasInner: HTMLDivElement | null) {
+function getCanvasPointerPosition(
+  event: PointerEvent,
+  canvasInner: HTMLDivElement | null,
+  zoom: number,
+) {
   if (!canvasInner) {
     return null;
   }
@@ -841,8 +895,8 @@ function getCanvasPointerPosition(event: PointerEvent, canvasInner: HTMLDivEleme
   const rect = canvasInner.getBoundingClientRect();
 
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) / zoom,
+    y: (event.clientY - rect.top) / zoom,
   };
 }
 
@@ -935,6 +989,7 @@ function scrollViewportFromMinimap(
   frame: HTMLDivElement | null,
   canvasWidth: number,
   canvasHeight: number,
+  zoom: number,
 ) {
   if (!surface || !frame) {
     return;
@@ -943,12 +998,12 @@ function scrollViewportFromMinimap(
   const rect = frame.getBoundingClientRect();
   const localX = clamp(clientX - rect.left - MINIMAP_PADDING_X, 0, MINIMAP_WIDTH);
   const localY = clamp(clientY - rect.top - MINIMAP_PADDING_Y, 0, MINIMAP_HEIGHT);
-  const targetLeft = (localX / MINIMAP_WIDTH) * canvasWidth - surface.clientWidth / 2;
-  const targetTop = (localY / MINIMAP_HEIGHT) * canvasHeight - surface.clientHeight / 2;
+  const targetLeft = (localX / MINIMAP_WIDTH) * canvasWidth * zoom - surface.clientWidth / 2;
+  const targetTop = (localY / MINIMAP_HEIGHT) * canvasHeight * zoom - surface.clientHeight / 2;
 
   surface.scrollTo({
-    left: clamp(targetLeft, 0, Math.max(0, canvasWidth - surface.clientWidth)),
-    top: clamp(targetTop, 0, Math.max(0, canvasHeight - surface.clientHeight)),
+    left: clamp(targetLeft, 0, Math.max(0, canvasWidth * zoom - surface.clientWidth)),
+    top: clamp(targetTop, 0, Math.max(0, canvasHeight * zoom - surface.clientHeight)),
   });
 }
 
