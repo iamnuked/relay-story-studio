@@ -1,73 +1,70 @@
-# EC2 MongoDB Access Checklist
+# EC2 MongoDB Notes
 
-This checklist exists because direct SSH access to the MongoDB EC2 host is currently blocked.
+## Current status
 
-## Current blocker
+MongoDB is installed and running on the EC2 host as of 2026-03-11.
 
-As of 2026-03-11, repeated SSH attempts to `15.164.230.158:22` from the project workspace timed out before authentication.
+- Public IP: `54.180.109.237`
+- Private IP: `172.31.43.74`
+- OS: Ubuntu 22.04.5 LTS
+- MongoDB version: `7.0.30`
+- Service: `mongod` enabled with systemd
 
-That means the problem is at the network/access layer, not the PEM key itself and not the SSH username.
+## Server configuration
 
-## What to verify in AWS
+- `bindIp` is set to `127.0.0.1,172.31.43.74`
+- `authorization` is enabled
+- UFW is currently inactive on the host
 
-### EC2 state
+This means MongoDB accepts:
 
-- The instance is in `running` state.
-- The instance still has the public IPv4 address `15.164.230.158`.
-- The instance was launched in a public subnet if direct SSH from the internet is intended.
+- local connections on the instance
+- private VPC connections to `172.31.43.74:27017`
 
-### Security group
+It should not be exposed to the public internet through the security group.
 
-Inbound rules should include:
+## Credentials
 
-- `TCP 22` from your current public IP or temporary `0.0.0.0/0`
+Application and admin credentials were created on the EC2 host.
 
-Recommended database rule:
+They are stored only on the server at:
 
-- Do **not** open `TCP 27017` to the whole internet.
-- If the app server will run on another EC2 instance, allow `27017` only from that app server security group.
-- If developers need temporary access, prefer SSH tunneling instead of public MongoDB exposure.
+```bash
+/home/ubuntu/relay-story-studio-mongodb.txt
+```
 
-### Networking
+That file is `600` and was intentionally not committed to Git.
 
-- The subnet route table has a default route to an Internet Gateway.
-- Network ACLs are not blocking inbound `22` or the response traffic.
-- The instance does not rely on a private IP only.
-
-## SSH usernames to try after port 22 opens
-
-- Ubuntu AMI: `ubuntu`
-- Amazon Linux AMI: `ec2-user`
-
-## Next steps once SSH opens
-
-1. Detect the AMI and package manager.
-2. Install MongoDB Community Server.
-3. Enable and start `mongod`.
-4. Create an admin user and an application user.
-5. Lock down bind/network settings.
-6. Hand back the final `MONGODB_URI` for `.env.local` / deployment envs.
-
-## Recommended connection patterns
+## Recommended access pattern
 
 ### Local development through SSH tunnel
 
-Keep MongoDB private on the EC2 host and tunnel it locally:
+Use a tunnel instead of opening `27017` publicly:
 
 ```bash
-ssh -i relay-story-studio-key.pem -L 27018:127.0.0.1:27017 ubuntu@15.164.230.158
+ssh -i relay-story-studio-key.pem -L 27018:127.0.0.1:27017 ubuntu@54.180.109.237
 ```
 
-Then use:
+Then point local development to:
 
 ```bash
 mongodb://127.0.0.1:27018/relay_story_studio
 ```
 
-### Direct app-to-DB connection
+### EC2 or VPC-hosted app server
 
-Only use this when the app runtime is hosted in AWS and the security group allows traffic from that runtime.
+If the app runs inside the same VPC, use the private IP and allow `27017` only from the app server security group.
+
+## AWS security group guidance
+
+- Keep `TCP 22` limited to developer/admin IPs.
+- Keep `TCP 27017` closed to `0.0.0.0/0`.
+- If a separate app server needs DB access, allow `27017` only from that server security group.
+
+## Basic validation commands
 
 ```bash
-mongodb://<app-user>:<password>@15.164.230.158:27017/relay_story_studio?authSource=admin
+sudo systemctl status mongod
+mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'
+ss -ltn | grep 27017
 ```
