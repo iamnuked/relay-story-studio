@@ -1,6 +1,9 @@
 "use client";
 
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { SummaryDisclosure } from "@/components/ai/SummaryDisclosure";
+import { MediaPicker } from "@/components/media/MediaPicker";
+import type { MediaAsset } from "@/lib/media/types";
 import { createCanvasNode, persistNodePosition } from "./canvasApi";
 import styles from "./CanvasWorkspace.module.css";
 import { CanvasWorkspaceData, CanvasWorkspaceNode } from "./types";
@@ -47,9 +50,9 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   const [nodes, setNodes] = useState(detail.nodes);
   const [selectedNodeId, setSelectedNodeId] = useState(detail.nodes[0]?.id ?? "");
   const [writeOpen, setWriteOpen] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const [draftText, setDraftText] = useState("");
   const [endingChecked, setEndingChecked] = useState(false);
+  const [selectedAssets, setSelectedAssets] = useState<MediaAsset[]>([]);
   const [dragState, setDragState] = useState<DragState>(null);
   const [panState, setPanState] = useState<PanState>(null);
   const [miniMapDragging, setMiniMapDragging] = useState(false);
@@ -333,7 +336,22 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     );
   }
 
+  function clearDraftState() {
+    setDraftText("");
+    setEndingChecked(false);
+    setSelectedAssets([]);
+  }
+
+  function resetWritePanelState() {
+    setWriteOpen(false);
+    clearDraftState();
+  }
+
   function handleSelect(node: CanvasWorkspaceNode) {
+    if (node.id !== selectedNodeId) {
+      clearDraftState();
+    }
+
     setSelectedNodeId(node.id);
     setWriteOpen(false);
     setSubmitMessage(null);
@@ -396,6 +414,11 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (node.id !== selectedNodeId) {
+      clearDraftState();
+    }
+
     setSelectedNodeId(node.id);
     setWriteOpen(false);
     setDragState({
@@ -439,6 +462,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         parentNodeId: selectedNode.id,
         content: draftText.trim(),
         position: nextPosition,
+        imageAssetIds: selectedAssets.map((asset) => asset.id),
         isEnding: endingChecked,
       });
 
@@ -453,10 +477,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
       });
 
       setSelectedNodeId(result.autoEndingNode?.id ?? result.node.id);
-      setWriteOpen(false);
-      setDraftText("");
-      setEndingChecked(false);
-      setSummaryOpen(false);
+      resetWritePanelState();
       setSubmitMessage(
         result.autoEndingNode
           ? "Node published and the branch auto-completed at max depth."
@@ -685,20 +706,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                   <label className={styles.fieldLabel}>Parent context</label>
                   <div className={styles.contextBox}>{selectedNode.content}</div>
 
-                  <button
-                    className={styles.summaryToggle}
-                    onClick={() => setSummaryOpen((current) => !current)}
-                    type="button"
-                  >
-                    {summaryOpen ? "Hide previous summary" : "Show previous summary"}
-                  </button>
-
-                  {summaryOpen ? (
-                    <div className={styles.summaryBox}>
-                      Role 4 summary slot. This stays collapsed by default and expands only when the
-                      writer asks for it.
-                    </div>
-                  ) : null}
+                  <SummaryDisclosure baseNodeId={selectedNode.id} canvasId={detail.canvas.id} />
                 </aside>
 
                 <div className={styles.composerMain}>
@@ -713,13 +721,15 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                     value={draftText}
                   />
 
+                  <MediaPicker
+                    baseNodeId={selectedNode.id}
+                    canvasId={detail.canvas.id}
+                    disabled={isSubmitting}
+                    onChange={setSelectedAssets}
+                    selectedAssets={selectedAssets}
+                  />
+
                   <div className={styles.inlineTools}>
-                    <button className={styles.secondaryButton} disabled type="button">
-                      Upload image
-                    </button>
-                    <button className={styles.secondaryButton} disabled type="button">
-                      AI image
-                    </button>
                     <label className={styles.checkboxRow}>
                       <input
                         checked={endingChecked}
@@ -731,7 +741,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                   </div>
 
                   <p className={styles.helperText}>
-                    Role 4 media hooks are still pending. Publish already hits the real Role 1 node API.
+                    Summaries stay collapsed until requested. Draft media stays detached until publish succeeds.
                   </p>
                 </div>
               </div>

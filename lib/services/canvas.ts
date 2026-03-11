@@ -14,7 +14,7 @@ import type { CanvasDetail, NodePosition, ParticipatedCanvas } from "@/lib/types
 import { serializeCanvas, serializeNode, serializeParticipationCanvas } from "@/lib/utils/serializers";
 import { generateShareKey } from "@/lib/utils/share-key";
 import { toObjectId } from "@/lib/utils/object-id";
-import { CanvasModel, NodeModel, ParticipationModel } from "@/models";
+import { AssetModel, CanvasModel, NodeModel, ParticipationModel } from "@/models";
 
 const DEFAULT_MAX_USER_NODES = 12;
 const MAX_ALLOWED_USER_NODES = 50;
@@ -70,6 +70,66 @@ function assertImageAssetIds(imageAssetIds?: string[]) {
   return ids.map((id) => toObjectId(id, "imageAssetIds[]"));
 }
 
+async function assertPublishableImageAssets(
+  imageAssetIds: Types.ObjectId[],
+  canvasId: Types.ObjectId,
+  userId: Types.ObjectId,
+  session: ClientSession | null
+) {
+  if (imageAssetIds.length === 0) {
+    return;
+  }
+
+  const assets = session
+    ? await AssetModel.find({ _id: { $in: imageAssetIds } }).session(session)
+    : await AssetModel.find({ _id: { $in: imageAssetIds } });
+
+  if (assets.length !== imageAssetIds.length) {
+    throw badRequest("Each selected image must exist before publishing.");
+  }
+
+  const assetMap = new Map(assets.map((asset) => [asset._id.toString(), asset]));
+
+  for (const assetId of imageAssetIds) {
+    const asset = assetMap.get(assetId.toString());
+
+    if (!asset) {
+      throw badRequest("Each selected image must exist before publishing.");
+    }
+
+    if (asset.canvasId.toString() !== canvasId.toString()) {
+      throw badRequest("Selected images must belong to the same canvas.");
+    }
+
+    if (asset.createdBy.toString() !== userId.toString()) {
+      throw badRequest("You can only attach images you created.");
+    }
+
+    if (asset.nodeId) {
+      throw badRequest("Selected images are already attached to another node.");
+    }
+  }
+}
+
+async function attachImageAssetsToNode(
+  imageAssetIds: Types.ObjectId[],
+  nodeId: Types.ObjectId,
+  session: ClientSession | null
+) {
+  if (imageAssetIds.length === 0) {
+    return;
+  }
+
+  await AssetModel.updateMany(
+    { _id: { $in: imageAssetIds } },
+    {
+      $set: {
+        nodeId
+      }
+    },
+    session ? { session } : undefined
+  );
+}
 async function generateUniqueShareKey(session: ClientSession | null) {
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const shareKey = generateShareKey();
@@ -326,6 +386,8 @@ export async function createNode(
       throw badRequest("This branch already reached the maximum number of user-written nodes.");
     }
 
+    await assertPublishableImageAssets(imageAssetIds, canvas._id, createdBy, session);
+
     const [node] = await NodeModel.create(
       [
         {
@@ -345,6 +407,8 @@ export async function createNode(
       ],
       session ? { session } : undefined
     );
+
+    await attachImageAssetsToNode(imageAssetIds, node._id, session);
 
     await ParticipationModel.updateOne(
       { canvasId: canvas._id, userId: createdBy },
@@ -423,3 +487,6 @@ export async function updateNodePosition(
     node: serializeNode(node)
   };
 }
+
+
+

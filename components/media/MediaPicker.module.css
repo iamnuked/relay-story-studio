@@ -1,0 +1,92 @@
+.root {
+  display: grid;
+  gap: 12px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadButton,
+.generateButton,
+.removeButton {
+  border-radius: 999px;
+  border: 1px solid rgba(31, 27, 22, 0.12);
+  background: rgba(255, 251, 245, 0.96);
+  color: var(--ink);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.generateButton {
+  background: rgba(231, 240, 255, 0.96);
+  color: #175cd3;
+  border-color: rgba(23, 92, 211, 0.18);
+}
+
+.uploadButton[aria-disabled="true"],
+.generateButton:disabled,
+.removeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.promptInput {
+  min-height: 92px;
+  border: 1px solid rgba(31, 27, 22, 0.12);
+  border-radius: 14px;
+  padding: 12px 14px;
+  resize: vertical;
+  background: rgba(255, 253, 249, 0.92);
+}
+
+.helperText,
+.message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.assetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.assetCard {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(31, 27, 22, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 251, 245, 0.9);
+}
+
+.assetImage {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(31, 27, 22, 0.06);
+}
+
+.assetMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.removeButton {
+  padding: 8px 10px;
+  font-size: 0.8rem;
+}

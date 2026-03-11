@@ -1,0 +1,46 @@
+.root {
+  display: grid;
+  gap: 10px;
+}
+
+.trigger {
+  justify-self: start;
+  border: 1px solid rgba(23, 92, 211, 0.18);
+  background: rgba(231, 240, 255, 0.92);
+  color: #175cd3;
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.panel {
+  border: 1px dashed rgba(31, 27, 22, 0.18);
+  background: rgba(255, 252, 247, 0.92);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.summaryText,
+.message,
+.error,
+.metaText {
+  margin: 0;
+}
+
+.summaryText,
+.message,
+.error {
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.metaText {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.error {
+  color: #9d2b21;
+}
