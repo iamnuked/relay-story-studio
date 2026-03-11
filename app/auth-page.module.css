@@ -1,0 +1,24 @@
+.shell {
+  display: grid;
+  gap: 24px;
+}
+
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+.panel {
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.copy {
+  max-width: 54ch;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
+    align-items: start;
+  }
+}

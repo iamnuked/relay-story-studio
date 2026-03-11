@@ -1,0 +1,9 @@
+.hero {
+  padding: clamp(28px, 6vw, 56px);
+  display: grid;
+  gap: 28px;
+}
+
+.lede {
+  max-width: 56ch;
+}
