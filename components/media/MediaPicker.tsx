@@ -120,7 +120,11 @@ export function MediaPicker({
       const result = (await response.json()) as GenerateImageResponse;
       onChange([...selectedAssets, result.asset].slice(0, maxAssets));
       setImagePrompt("");
-      setMessage("AI image mock generated and attached to the draft.");
+      setMessage(
+        result.source === "openai"
+          ? "OpenAI image generated and attached to the draft."
+          : "Mock AI image generated and attached to the draft."
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not generate image.");
     } finally {

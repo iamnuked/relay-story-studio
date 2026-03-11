@@ -22,7 +22,9 @@ export type GenerateImageRequest = {
   prompt: string;
 };
 
+export type GenerateImageSource = "mock" | "openai";
+
 export type GenerateImageResponse = {
   asset: MediaAsset;
-  source: "mock";
+  source: GenerateImageSource;
 };
