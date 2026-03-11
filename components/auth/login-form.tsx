@@ -1,10 +1,13 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
 import styles from "@/components/auth/auth-form.module.css";
 import type { LoginRequest } from "@/lib/types/api";
+
+type RedirectTarget = "/home" | `/canvas/${string}`;
 
 export function LoginForm() {
   const router = useRouter();
@@ -12,6 +15,8 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const nextHref = normalizeRedirectTarget(searchParams.get("next"));
+  const signupHref: Route =
+    nextHref === "/home" ? "/signup" : (`/signup?next=${encodeURIComponent(nextHref)}` as Route);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,7 +82,7 @@ export function LoginForm() {
       {error ? <p className="status-text status-error">{error}</p> : null}
 
       <div className={styles.footer}>
-        <Link className="button-ghost" href={nextHref === "/home" ? "/signup" : `/signup?next=${encodeURIComponent(nextHref)}`}>
+        <Link className="button-ghost" href={signupHref}>
           Need an account?
         </Link>
         <button className="button-primary" disabled={isSubmitting} type="submit">
@@ -88,7 +93,7 @@ export function LoginForm() {
   );
 }
 
-function normalizeRedirectTarget(next: string | null) {
+function normalizeRedirectTarget(next: string | null): RedirectTarget {
   if (!next || !next.startsWith("/")) {
     return "/home";
   }
@@ -97,5 +102,9 @@ function normalizeRedirectTarget(next: string | null) {
     return "/home";
   }
 
-  return next;
+  if (next.startsWith("/canvas/")) {
+    return next as RedirectTarget;
+  }
+
+  return "/home";
 }
