@@ -30,8 +30,8 @@ export default async function HomePage() {
           </div>
 
           <p className="body-copy" style={{ maxWidth: "64ch" }}>
-            This page is owned by Role 1. It lists canvases tracked through participation records
-            and exposes the creation flow that other roles will consume via the shared JSON routes.
+            Your relay canvases open into the full canvas workspace now. JSON routes remain
+            available for debugging, but the primary path is the visual canvas UI.
           </p>
         </section>
 
@@ -52,8 +52,8 @@ export default async function HomePage() {
             <div className="stack">
               <h2 style={{ margin: 0 }}>Participated canvases</h2>
               <p className="body-copy">
-                Public canvas rendering and reader views are owned by other roles. For now, these
-                cards expose stable share keys and API links for integration work.
+                Open each shared canvas in the visual editor, or inspect the raw contract when you
+                need to debug server responses.
               </p>
             </div>
 
@@ -75,8 +75,11 @@ export default async function HomePage() {
                     </div>
 
                     <div className="button-row">
+                      <a className="button-primary" href={`/canvas/${canvas.shareKey}`}>
+                        Open canvas
+                      </a>
                       <a className="button-secondary" href={`/api/canvases/${canvas.shareKey}`}>
-                        Open JSON contract
+                        View JSON
                       </a>
                     </div>
                   </article>

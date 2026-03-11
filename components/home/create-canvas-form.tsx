@@ -49,6 +49,7 @@ export function CreateCanvasForm() {
       setSuccess(`Canvas created with share key ${data.canvas.shareKey}.${autoEndingNote}`);
       event.currentTarget.reset();
       setIsSubmitting(false);
+      router.push(`/canvas/${data.canvas.shareKey}`);
       router.refresh();
     });
   }

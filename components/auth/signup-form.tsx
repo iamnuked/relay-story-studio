@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
 import styles from "@/components/auth/auth-form.module.css";
 import type { SignupRequest } from "@/lib/types/api";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const nextHref = normalizeRedirectTarget(searchParams.get("next"));
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +43,7 @@ export function SignupForm() {
         return;
       }
 
-      router.push("/home");
+      router.push(nextHref);
       router.refresh();
     });
   }
@@ -81,7 +83,7 @@ export function SignupForm() {
       {error ? <p className="status-text status-error">{error}</p> : null}
 
       <div className={styles.footer}>
-        <Link className="button-ghost" href="/login">
+        <Link className="button-ghost" href={nextHref === "/home" ? "/login" : `/login?next=${encodeURIComponent(nextHref)}`}>
           Already have an account?
         </Link>
         <button className="button-primary" disabled={isSubmitting} type="submit">
@@ -90,4 +92,16 @@ export function SignupForm() {
       </div>
     </form>
   );
+}
+
+function normalizeRedirectTarget(next: string | null) {
+  if (!next || !next.startsWith("/")) {
+    return "/home";
+  }
+
+  if (next.startsWith("//")) {
+    return "/home";
+  }
+
+  return next;
 }
