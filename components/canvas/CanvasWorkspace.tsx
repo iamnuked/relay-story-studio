@@ -48,6 +48,7 @@ type ViewportState = {
 
 export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   const [nodes, setNodes] = useState(detail.nodes);
+  const [assets, setAssets] = useState(detail.assets);
   const [selectedNodeId, setSelectedNodeId] = useState(detail.nodes[0]?.id ?? "");
   const [writeOpen, setWriteOpen] = useState(false);
   const [draftText, setDraftText] = useState("");
@@ -73,6 +74,12 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
   const initializedViewportRef = useRef(false);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? nodes[0];
+  const selectedNodeAssets = selectedNode
+    ? selectedNode.imageAssetIds.flatMap((assetId) => {
+        const asset = assets.find((candidate) => candidate.id === assetId);
+        return asset ? [asset] : [];
+      })
+    : [];
   const rootNode = nodes.find((node) => node.parentNodeId === null) ?? nodes[0];
   const viewerMode = detail.viewer ? "authenticated" : "anonymous";
   const shareHref = `/canvas/${detail.canvas.shareKey}`;
@@ -184,6 +191,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
     const minAllowedX = dragParentNode
       ? dragParentNode.position.x + NODE_WIDTH + MIN_CHILD_X_GAP
       : 60;
+    const minAllowedY = 80 - worldOffsetY;
 
     function handlePointerMove(event: PointerEvent) {
       const pointer = getCanvasPointerPosition(event, canvasInnerRef.current);
@@ -200,7 +208,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
                 ...node,
                 position: {
                   x: Math.max(minAllowedX, pointer.x - worldOffsetX - activeDragState.offsetX),
-                  y: Math.max(80, pointer.y - worldOffsetY - activeDragState.offsetY),
+                  y: Math.max(minAllowedY, pointer.y - worldOffsetY - activeDragState.offsetY),
                 },
               }
             : node,
@@ -465,6 +473,7 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         imageAssetIds: selectedAssets.map((asset) => asset.id),
         isEnding: endingChecked,
       });
+      const publishedNodeId = result.node.id;
 
       setNodes((currentNodes) => {
         const nextNodes = [...currentNodes, result.node];
@@ -474,6 +483,17 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
         }
 
         return nextNodes;
+      });
+      setAssets((currentAssets) => {
+        const assetIds = new Set(selectedAssets.map((asset) => asset.id));
+
+        return [
+          ...currentAssets.filter((asset) => !assetIds.has(asset.id)),
+          ...selectedAssets.map((asset) => ({
+            ...asset,
+            nodeId: publishedNodeId
+          }))
+        ];
       });
 
       setSelectedNodeId(result.autoEndingNode?.id ?? result.node.id);
@@ -569,6 +589,19 @@ export function CanvasWorkspace({ detail }: CanvasWorkspaceProps) {
             <div className={styles.metaRow}>
               {getNodeTypeLabel(selectedNode)} · {selectedNode.createdAt}
             </div>
+            {selectedNodeAssets.length > 0 ? (
+              <div className={styles.drawerAssetGrid}>
+                {selectedNodeAssets.map((asset, index) => (
+                  <figure className={styles.drawerAssetCard} key={asset.id}>
+                    <img
+                      alt={asset.prompt?.trim() || `Node attachment ${index + 1}`}
+                      className={styles.drawerAssetImage}
+                      src={asset.url}
+                    />
+                  </figure>
+                ))}
+              </div>
+            ) : null}
             <p className={styles.bodyCopy}>{selectedNode.content}</p>
             <div className={styles.buttonRow}>
               {selectedNode.isEnding ? (

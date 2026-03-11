@@ -1,5 +1,6 @@
 import { ClientSession, Types } from "mongoose";
 import { withTransaction } from "@/lib/db/transaction";
+import { serializeAsset as serializeMediaAsset } from "@/lib/media/assets";
 import { connectToDatabase } from "@/lib/db/mongoose";
 import { badRequest, notFound } from "@/lib/server/errors";
 import type {
@@ -335,6 +336,15 @@ export async function getCanvasDetailByShareKey(
     depth: 1,
     createdAt: 1
   });
+  const assetIds = nodes.flatMap((node) => node.imageAssetIds.map((assetId) => assetId.toString()));
+  const assets = assetIds.length
+    ? await AssetModel.find({
+        _id: {
+          $in: assetIds
+        }
+      })
+    : [];
+  const assetMap = new Map(assets.map((asset) => [asset._id.toString(), serializeMediaAsset(asset)]));
 
   if (viewer) {
     await touchParticipation(canvas._id, toObjectId(viewer.userId, "viewer.userId"), null);
@@ -343,6 +353,10 @@ export async function getCanvasDetailByShareKey(
   return {
     canvas: serializeCanvas(canvas),
     nodes: nodes.map(serializeNode),
+    assets: assetIds.flatMap((assetId) => {
+      const asset = assetMap.get(assetId);
+      return asset ? [asset] : [];
+    }),
     viewer
   };
 }
@@ -487,6 +501,5 @@ export async function updateNodePosition(
     node: serializeNode(node)
   };
 }
-
 
 

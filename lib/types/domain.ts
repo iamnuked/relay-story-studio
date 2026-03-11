@@ -1,3 +1,4 @@
+import type { MediaAsset } from "@/lib/media/types";
 import type { AuthSession } from "@/lib/types/auth";
 
 export type NodeKind = "user" | "system";
@@ -83,5 +84,6 @@ export type ReaderBranchContent = {
 export type CanvasDetail = {
   canvas: Canvas;
   nodes: Node[];
+  assets: MediaAsset[];
   viewer: AuthSession | null;
 };
