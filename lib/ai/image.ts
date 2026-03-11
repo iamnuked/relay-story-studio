@@ -1,11 +1,44 @@
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/db/mongoose";
-import { badRequest, notFound } from "@/lib/server/errors";
+import { ApiError, badRequest, notFound } from "@/lib/server/errors";
 import { toObjectId } from "@/lib/utils/object-id";
 import { serializeAsset } from "@/lib/media/assets";
 import { getExtensionForMimeType, writeStoredAsset } from "@/lib/media/storage";
-import type { GenerateImageRequest, MediaAsset } from "@/lib/media/types";
+import type {
+  GenerateImageRequest,
+  GenerateImageResponse,
+  GenerateImageSource,
+  MediaAsset
+} from "@/lib/media/types";
 import { AssetModel, CanvasModel, NodeModel } from "@/models";
+
+const OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations";
+const DEFAULT_OPENAI_IMAGE_MODEL = "gpt-image-1-mini";
+const DEFAULT_OPENAI_IMAGE_SIZE = "1024x1024";
+const DEFAULT_OPENAI_IMAGE_QUALITY = "low";
+const DEFAULT_OPENAI_IMAGE_OUTPUT_FORMAT = "png";
+
+const OUTPUT_FORMAT_TO_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp"
+};
+
+type PreparedImageInput = {
+  canvasId: Types.ObjectId;
+  createdBy: Types.ObjectId;
+  prompt: string;
+};
+
+type OpenAiImagesResponse = {
+  data?: Array<{
+    b64_json?: string;
+  }>;
+  error?: {
+    message?: string;
+  };
+};
 
 function escapeXml(value: string) {
   return value
@@ -70,7 +103,58 @@ function buildMockSvg(prompt: string) {
 </svg>`.trim();
 }
 
-export async function createMockGeneratedImage(userId: string, input: GenerateImageRequest): Promise<MediaAsset> {
+function getOpenAiApiKey() {
+  return process.env.OPENAI_API_KEY?.trim() ?? "";
+}
+
+function resolveImageProvider(): GenerateImageSource {
+  const configured = process.env.AI_IMAGE_PROVIDER?.trim().toLowerCase() ?? "auto";
+  const hasOpenAiKey = getOpenAiApiKey().length > 0;
+
+  if (configured === "auto") {
+    return hasOpenAiKey ? "openai" : "mock";
+  }
+
+  if (configured === "mock") {
+    return "mock";
+  }
+
+  if (configured === "openai") {
+    if (!hasOpenAiKey) {
+      throw new ApiError(500, "AI_IMAGE_PROVIDER is set to openai but OPENAI_API_KEY is not configured.");
+    }
+
+    return "openai";
+  }
+
+  throw new ApiError(500, "AI_IMAGE_PROVIDER must be auto, mock, or openai.");
+}
+
+function getOpenAiImageConfig() {
+  const apiKey = getOpenAiApiKey();
+
+  if (!apiKey) {
+    throw new ApiError(500, "OPENAI_API_KEY is not configured.");
+  }
+
+  const outputFormat = (process.env.OPENAI_IMAGE_OUTPUT_FORMAT?.trim().toLowerCase() || DEFAULT_OPENAI_IMAGE_OUTPUT_FORMAT);
+  const mimeType = OUTPUT_FORMAT_TO_MIME[outputFormat];
+
+  if (!mimeType) {
+    throw new ApiError(500, "OPENAI_IMAGE_OUTPUT_FORMAT must be png, jpg, jpeg, or webp.");
+  }
+
+  return {
+    apiKey,
+    model: process.env.OPENAI_IMAGE_MODEL?.trim() || DEFAULT_OPENAI_IMAGE_MODEL,
+    size: process.env.OPENAI_IMAGE_SIZE?.trim() || DEFAULT_OPENAI_IMAGE_SIZE,
+    quality: process.env.OPENAI_IMAGE_QUALITY?.trim() || DEFAULT_OPENAI_IMAGE_QUALITY,
+    outputFormat,
+    mimeType
+  };
+}
+
+async function prepareGeneratedImageInput(userId: string, input: GenerateImageRequest): Promise<PreparedImageInput> {
   await connectToDatabase();
 
   const canvasId = toObjectId(input.canvasId, "canvasId");
@@ -95,21 +179,90 @@ export async function createMockGeneratedImage(userId: string, input: GenerateIm
     throw notFound("Base node not found inside this canvas.");
   }
 
+  return {
+    canvasId,
+    createdBy,
+    prompt
+  };
+}
+
+async function persistGeneratedAsset(input: PreparedImageInput, mimeType: string, bytes: Buffer): Promise<MediaAsset> {
   const assetId = new Types.ObjectId();
-  const extension = getExtensionForMimeType("image/svg+xml");
+  const extension = getExtensionForMimeType(mimeType);
   const fileName = `${assetId.toString()}${extension}`;
-  const svg = buildMockSvg(prompt);
-  await writeStoredAsset(fileName, Buffer.from(svg, "utf8"));
+  await writeStoredAsset(fileName, bytes);
 
   const asset = await AssetModel.create({
     _id: assetId,
-    canvasId,
+    canvasId: input.canvasId,
     nodeId: null,
     type: "generated-image",
     url: `/api/assets/file/${fileName}`,
-    prompt,
-    createdBy
+    prompt: input.prompt,
+    createdBy: input.createdBy
   });
 
   return serializeAsset(asset);
+}
+
+async function createMockGeneratedAsset(input: PreparedImageInput): Promise<MediaAsset> {
+  const svg = buildMockSvg(input.prompt);
+  return persistGeneratedAsset(input, "image/svg+xml", Buffer.from(svg, "utf8"));
+}
+
+async function readOpenAiError(response: Response) {
+  try {
+    const payload = (await response.json()) as OpenAiImagesResponse;
+    return payload.error?.message ?? "OpenAI image generation failed.";
+  } catch {
+    return "OpenAI image generation failed.";
+  }
+}
+
+async function createOpenAiGeneratedAsset(input: PreparedImageInput): Promise<MediaAsset> {
+  const config = getOpenAiImageConfig();
+  const response = await fetch(OPENAI_IMAGE_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.model,
+      prompt: input.prompt,
+      size: config.size,
+      quality: config.quality,
+      output_format: config.outputFormat
+    }),
+    signal: AbortSignal.timeout(120000)
+  });
+
+  if (!response.ok) {
+    throw new ApiError(502, await readOpenAiError(response));
+  }
+
+  const payload = (await response.json()) as OpenAiImagesResponse;
+  const base64Image = payload.data?.[0]?.b64_json;
+
+  if (!base64Image) {
+    throw new ApiError(502, "OpenAI image response did not include image data.");
+  }
+
+  return persistGeneratedAsset(input, config.mimeType, Buffer.from(base64Image, "base64"));
+}
+
+export async function createGeneratedImage(
+  userId: string,
+  input: GenerateImageRequest
+): Promise<GenerateImageResponse> {
+  const prepared = await prepareGeneratedImageInput(userId, input);
+  const source = resolveImageProvider();
+  const asset = source === "openai"
+    ? await createOpenAiGeneratedAsset(prepared)
+    : await createMockGeneratedAsset(prepared);
+
+  return {
+    asset,
+    source
+  };
 }
