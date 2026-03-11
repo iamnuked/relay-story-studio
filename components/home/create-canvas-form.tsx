@@ -13,7 +13,8 @@ export function CreateCanvasForm() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const payload: CreateCanvasRequest = {
       title: String(formData.get("title") ?? ""),
       rootContent: String(formData.get("rootContent") ?? ""),
@@ -47,7 +48,7 @@ export function CreateCanvasForm() {
 
       const autoEndingNote = data.autoEndingNode ? " Auto ending created immediately." : "";
       setSuccess(`Canvas created with share key ${data.canvas.shareKey}.${autoEndingNote}`);
-      event.currentTarget.reset();
+      form.reset();
       setIsSubmitting(false);
       router.push(`/canvas/${data.canvas.shareKey}`);
       router.refresh();
